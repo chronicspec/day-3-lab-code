@@ -1,6 +1,8 @@
 import time
-from typing import Dict, Any, List
+from typing import Dict, Any
+
 from src.telemetry.logger import logger
+
 
 class PerformanceTracker:
     """
