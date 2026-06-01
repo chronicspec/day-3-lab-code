@@ -35,3 +35,6 @@ class PerformanceTracker:
             return ((prompt_tokens / 1_000_000) * 5.00) + ((completion_tokens / 1_000_000) * 15.00)
         
         return 0.0  # Mặc định cho Local model offline
+    
+
+tracker = PerformanceTracker()

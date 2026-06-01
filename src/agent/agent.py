@@ -47,11 +47,11 @@ Important: When you output 'Action:', you MUST stop generating text immediately 
             steps += 1
             logger.log_event("AGENT_STEP_START", {"step": steps})
             
-            # 1. Gọi Gemini/OpenAI API sinh bước suy nghĩ tiếp theo
-            result = self.llm.generate(current_prompt=current_context, system_prompt=self.get_system_prompt())
+            # ĐÃ SỬA: Thay 'current_prompt' bằng 'prompt' để khớp với GeminiProvider
+            result = self.llm.generate(prompt=current_context, system_prompt=self.get_system_prompt())
             llm_output = result.get("content", "").strip()
             
-            # Ghi nhận dữ liệu giám sát hệ thống (Tokens, Latency) phục vụ chấm điểm Lab
+            # Ghi nhận dữ liệu giám sát hệ thống (Tokens, Latency)
             tracker.track_request(
                 provider=result.get("provider", "google"),
                 model=self.llm.model_name,
@@ -62,16 +62,16 @@ Important: When you output 'Action:', you MUST stop generating text immediately 
             # Nối kết quả đầu ra của mô hình vào lịch sử xử lý
             current_context += f"\n{llm_output}"
             
-            # Cải tiến Agent v2: Làm sạch Markdown nhiễu nhiễu (ví dụ: ```json ... ```) khiến Parser bị lỗi
+            # Làm sạch Markdown nhiễu
             llm_output_cleaned = re.sub(r"```[a-zA-Z]*\n?", "", llm_output).replace("```", "").strip()
             
-            # Kịch bản 1: Tìm thấy Câu trả lời cuối cùng (Final Answer)
+            # Kịch bản 1: Tìm thấy Câu trả lời cuối cùng
             final_match = re.search(r"Final Answer:\s*(.*)", llm_output_cleaned, re.DOTALL | re.IGNORECASE)
             if final_match:
                 logger.log_event("AGENT_END_SUCCESS", {"steps": steps})
                 return final_match.group(1).strip()
             
-            # Kịch bản 2: Tìm thấy hành động gọi Tool dạng `tool_name(args)`
+            # Kịch bản 2: Tìm thấy hành động gọi Tool
             action_match = re.search(r"Action:\s*(\w+)\((.*)\)", llm_output_cleaned, re.IGNORECASE)
             if action_match:
                 tool_name = action_match.group(1).strip()
@@ -79,11 +79,11 @@ Important: When you output 'Action:', you MUST stop generating text immediately 
 
                 observation = self._execute_tool(tool_name, tool_args)
                 
-                # Nối Observation ngược lại ngữ cảnh cho bước lặp sau của LLM
+                # Nối Observation ngược lại ngữ cảnh
                 current_context += f"\nObservation: {observation}"
                 logger.log_event("AGENT_TOOL_CALL", {"tool": tool_name, "args": tool_args, "observation": observation})
             else:
-                # Agent v2 - Tự động nhắc nhở sửa định dạng nếu LLM sinh lỗi cấu trúc (Parser Error)
+                # Tự động nhắc nhở sửa định dạng nếu LLM sinh lỗi
                 error_msg = "Error: Invalid response format. You must strictly use 'Action: tool_name(args)' or 'Final Answer: [response]'."
                 current_context += f"\nObservation: {error_msg}"
                 logger.log_event("AGENT_FORMAT_ERROR", {"output": llm_output})
