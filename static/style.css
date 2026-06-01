@@ -1,0 +1,37 @@
+/* static/style.css */
+:root {
+    --primary: #4a90e2;
+    --bg: #f4f7f6;
+    --text: #333;
+}
+
+body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); color: var(--text); padding: 20px; }
+
+h1 { color: #2c3e50; }
+
+.container { display: flex; gap: 20px; padding: 20px; max-width: 1200px; margin: auto; }
+
+.box { 
+    flex: 1; 
+    background: white; 
+    padding: 20px; 
+    border-radius: 12px; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+}
+
+.box h3 { border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
+
+.content { white-space: pre-wrap; line-height: 1.6; font-size: 14px; }
+
+input { padding: 12px; width: 60%; border-radius: 6px; border: 1px solid #ddd; }
+
+button { padding: 12px 20px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; transition: 0.3s; }
+
+button:hover { background: #357abd; }
+
+button:disabled { background: #ccc; }
+
+#loading { text-align: center; margin: 10px; font-weight: bold; color: var(--primary); }

@@ -1,0 +1,12 @@
+{
+    "DaNang": {
+        "tomorrow": {
+            "temp": 37,
+            "condition": "Nhiều mây"
+        },
+        "day_after": {
+            "temp": 36,
+            "condition": "Dịu mát"
+        }
+    }
+}
