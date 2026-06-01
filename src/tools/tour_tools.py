@@ -2,6 +2,7 @@ import re
 import json
 import os
 
+
 # Đường dẫn đến thư mục data (Giả định cấu trúc dự án: src/tools/tour_tools.py và data/ nằm cùng cấp cha)
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data')
 

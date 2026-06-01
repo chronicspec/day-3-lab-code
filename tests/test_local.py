@@ -12,7 +12,22 @@ from src.core.gemini_provider import GeminiProvider
 
 # --- MOCK LOGIC CHO TOOLS ---
 def search_spots_impl(args_str: str) -> str:
-    return "Gợi ý: Chùa Linh Ứng, Phố cổ Hội An, ngắm cảnh Sơn Trà từ xe. Các điểm này đều bằng phẳng, di chuyển bằng ô tô cực kỳ thuận tiện."
+    # 1. Parse city từ args_str
+    city_match = re.search(r'city=["\']?([^"\']+)["\']?', args_str)
+    city = city_match.group(1).capitalize() if city_match else "Hanoi" # Mặc định là Hanoi
+    
+    # 2. Load file JSON
+    data_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'spots.json')
+    with open(data_path, 'r', encoding='utf-8') as f:
+        spots_db = json.load(f)
+    
+    # 3. Lấy dữ liệu
+    spots = spots_db.get(city, [])
+    if not spots:
+        return f"Không tìm thấy điểm tham quan tại {city}."
+    
+    names = [s['name'] for s in spots]
+    return f"Các điểm tham quan tại {city}: {', '.join(names)}."
 
 def get_weather_impl(args_str: str) -> str:
     return "Thời tiết Đà Nẵng ngày mai: Nắng gắt (36°C) từ 11h - 15h. Đầu sáng và cuối chiều thời tiết dịu mát (29°C)."

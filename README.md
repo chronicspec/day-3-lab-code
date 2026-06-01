@@ -1,56 +1,56 @@
-# Lab 3: Chatbot vs ReAct Agent (Industry Edition)
+# 🌍 AI Travel Agent: Production-Grade ReAct System
 
-Welcome to Phase 3 of the Agentic AI course! This lab focuses on moving from a simple LLM Chatbot to a sophisticated **ReAct Agent** with industry-standard monitoring.
+Hệ thống **AI Travel Agent** là ứng dụng đại lý du lịch thông minh, sử dụng tư duy **ReAct (Reasoning + Acting)** để lập kế hoạch, dự báo thời tiết và tính toán ngân sách du lịch tự động.
 
-## 🚀 Getting Started
+## 🚀 Tính năng nổi bật
+- **ReAct Framework**: Agent suy luận qua các bước `Thought -> Action -> Observation`.
+- **Telemetry & Monitoring**: Tích hợp ghi log JSON và đo lường hiệu suất (Latency, Token usage) cho từng bước.
+- **Web Interface**: Giao diện người dùng hiện đại với tính năng hiển thị tiến trình (Trace) theo thời gian thực (Accordion style).
+- **Multi-Provider Support**: Dễ dàng chuyển đổi giữa Gemini, OpenAI và Local Model (thông qua `llama-cpp`).
 
-### 1. Setup Environment
-Copy the `.env.example` to `.env` and fill in your API keys:
+## 🛠️ Hướng dẫn cài đặt & Vận hành
+
+### 1. Yêu cầu hệ thống
+- Python 3.10+
+- `pip` (Trình quản lý gói)
+
+### 2. Cấu hình môi trường
+Tạo file cấu hình từ bản mẫu:
 ```bash
 cp .env.example .env
-```
 
-### 2. Install Dependencies
-```bash
+Mở file .env và điền API Key của bạn:
+
+GEMINI_API_KEY: API Key từ Google AI Studio.
+
+DEFAULT_PROVIDER: Chọn google (cho Gemini) hoặc openai.
+
+3. Cài đặt thư viện
+Bash
 pip install -r requirements.txt
-```
+4. Khởi chạy hệ thống
+Để khởi động giao diện Web (Flask), chạy lệnh:
 
-### 3. Directory Structure
-- `src/tools/`: Extension point for your custom tools.
+Bash
+python app.py
+Sau đó truy cập: http://localhost:5000
 
-## 🏠 Running with Local Models (CPU)
+📁 Cấu trúc dự án
+/src/agent/: Core logic thực thi vòng lặp ReActAgent.
 
-If you don't want to use OpenAI or Gemini, you can run open-source models (like Phi-3) directly on your CPU using `llama-cpp-python`.
+/src/tools/: Các công cụ thực thi (search_attractions, check_weather, calculate_tour_budget).
 
-### 1. Download the Model
-Download the **Phi-3-mini-4k-instruct-q4.gguf** (approx 2.2GB) from Hugging Face:
-- [Phi-3-mini-4k-instruct-GGUF](https://huggingface.co/microsoft/Phi-3-mini-4k-instruct-gguf)
-- Direct Download: [phi-3-mini-4k-instruct-q4.gguf](https://huggingface.co/microsoft/Phi-3-mini-4k-instruct-gguf/resolve/main/Phi-3-mini-4k-instruct-q4.gguf)
+/data/: Dữ liệu JSON mẫu (điểm tham quan, xe, thời tiết).
 
-### 2. Place Model in Project
-Create a `models/` folder in the root and move the downloaded `.gguf` file there.
+/logs/: Nhật ký hoạt động chi tiết (phục vụ đánh giá hiệu suất - Telemetry).
 
-### 3. Update `.env`
-Change your `DEFAULT_PROVIDER` and set the path:
-```env
-DEFAULT_PROVIDER=local
-LOCAL_MODEL_PATH=./models/Phi-3-mini-4k-instruct-q4.gguf
-```
+/templates/ & /static/: Giao diện Web (HTML/CSS).
 
-## 🎯 Lab Objectives
+📊 Đánh giá & Debugging
+Hệ thống lưu vết mọi hành động của Agent vào thư mục /logs/. Các dữ liệu này được dùng để:
 
-1.  **Baseline Chatbot**: Observe the limitations of a standard LLM when faced with multi-step reasoning.
-2.  **ReAct Loop**: Implement the `Thought-Action-Observation` cycle in `src/agent/agent.py`.
-3.  **Provider Switching**: Swap between OpenAI and Gemini seamlessly using the `LLMProvider` interface.
-4.  **Failure Analysis**: Use the structured logs in `logs/` to identify why the agent fails (hallucinations, parsing errors).
-5.  **Grading & Bonus**: Follow the [SCORING.md](file:///Users/tindt/personal/ai-thuc-chien/day03-lab-agent/SCORING.md) to maximize your points and explore bonus metrics.
+Phân tích lỗi (Failure Analysis): Truy vết các bước Agent suy luận sai.
 
-## 🛠️ How to Use This Baseline
-The code is designed as a **Production Prototype**. It includes:
-- **Telemetry**: Every action is logged in JSON format for later analysis.
-- **Robust Provider Pattern**: Easily extendable to any LLM API.
-- **Clean Skeletons**: Focus on the logic that matters—the agent's reasoning process.
+Tối ưu hóa (Ablation Study): So sánh kết quả giữa các phiên bản Prompt.
 
----
-
-*Happy Coding! Let's build agents that actually work.*
+Đánh giá hiệu năng: Tính toán Latency (độ trễ) và chi phí (Cost).
