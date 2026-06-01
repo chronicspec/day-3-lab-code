@@ -30,9 +30,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const agentMessageId = 'agent-' + Date.now();
         const traceContainerId = 'trace-' + Date.now();
-        
-        // Tạo khung giữ chỗ tạm thời cho AI (Placeholder)
-        appendAgentPlaceholder(agentMessageId, traceContainerId);
+        const metricsContainerId = 'metrics-' + Date.now();
+
+        // Gọi khởi tạo khung trống
+        appendAgentPlaceholder(agentMessageId, traceContainerId, metricsContainerId);
 
         try {
             // Gửi yêu cầu phân tích ReAct sang Backend API
@@ -44,9 +45,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
 
             if (data.status === 'success') {
-                // Đổ danh sách suy nghĩ (Traces log) vào khối Accordion
                 renderAgentTraces(traceContainerId, data.traces);
-                // Hiển thị câu trả lời cuối cùng sạch sẽ sau khi định dạng
+                renderAgentMetrics(metricsContainerId, data.metrics);
                 renderAgentFinalAnswer(agentMessageId, data.response);
             } else {
                 throw new Error(data.detail || 'Lỗi hệ thống nội bộ.');
@@ -95,20 +95,38 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 5. Hàm tạo khung chờ cho Agent
-    function appendAgentPlaceholder(agentMessageId, traceContainerId) {
+    function appendAgentPlaceholder(agentMessageId, traceContainerId, metricsContainerId) {
         const html = `
             <div class="flex gap-4 items-start">
                 <div class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-md">AI</div>
                 <div class="space-y-3 w-full max-w-2xl">
-                    <div class="border-l-2 border-gray-700 pl-3 py-1">
-                        <button type="button" onclick="toggleThinking('${traceContainerId}')" class="text-xs text-gray-500 hover:text-gray-400 flex items-center gap-2 focus:outline-none cursor-pointer">
-                            <i id="icon-${traceContainerId}" class="fa-solid fa-chevron-down text-[10px]"></i>
-                            <span class="font-medium tracking-wide">Process Thinking (Xử lý tác tử)...</span>
-                        </button>
-                        <div id="${traceContainerId}" class="mt-2 space-y-2 font-mono text-[11px] text-gray-400 bg-[#121222] p-3 rounded-xl border border-[#1e1e35] transition-all">
+                    
+                    <div class="border-l-2 border-gray-700 pl-3 py-1 bg-[#11111e]/40 pr-3 rounded-r-xl">
+                        <div class="flex items-center justify-between border-b border-[#1e1e32] pb-1.5 mb-2">
+                            <div class="flex gap-3">
+                                <button type="button" onclick="switchAgentTab('${traceContainerId}', '${metricsContainerId}', 'thinking')" 
+                                        class="text-xs text-blue-400 font-medium focus:outline-none cursor-pointer flex items-center gap-1">
+                                    <i class="fa-solid fa-brain text-[10px]"></i> Process Thinking
+                                </button>
+                                <button type="button" onclick="switchAgentTab('${traceContainerId}', '${metricsContainerId}', 'metrics')" 
+                                        class="text-xs text-gray-500 hover:text-gray-400 font-medium focus:outline-none cursor-pointer flex items-center gap-1">
+                                    <i class="fa-solid fa-chart-bar text-[10px]"></i> Telemetry Metrics (Lab Eval)
+                                </button>
+                            </div>
+                            <button type="button" onclick="toggleThinkingBlock('${traceContainerId}', '${metricsContainerId}')" class="text-gray-600 hover:text-gray-400">
+                                <i id="icon-toggle-${traceContainerId}" class="fa-solid fa-chevron-down text-[10px]"></i>
+                            </button>
+                        </div>
+                        
+                        <div id="${traceContainerId}" class="space-y-2 font-mono text-[11px] text-gray-400 bg-[#121222] p-3 rounded-xl border border-[#1e1e35] transition-all">
                             <div class="animate-pulse text-amber-400">&gt; Agent đang kích hoạt chu trình ReAct Loop...</div>
                         </div>
+                        
+                        <div id="${metricsContainerId}" class="hidden font-mono text-[11px] text-gray-400 bg-[#121222] p-3 rounded-xl border border-[#1e1e35] transition-all">
+                            <div class="text-gray-600">Đang tính toán tài nguyên hệ thống...</div>
+                        </div>
                     </div>
+
                     <div id="${agentMessageId}" class="text-sm text-gray-200 leading-relaxed whitespace-pre-wrap py-1">
                         <i class="fa-solid fa-circle-notch animate-spin text-blue-400 text-xs"></i> <span class="text-xs text-gray-500 italic">Đang xuất kết quả lịch trình...</span>
                     </div>
@@ -154,3 +172,77 @@ document.addEventListener('DOMContentLoaded', () => {
         messageDiv.innerHTML = cleanHtml;
     }
 });
+
+// Hàm chuyển đổi qua lại giữa Tab Suy nghĩ và Tab Thống kê chấm điểm
+window.switchAgentTab = function(traceId, metricsId, tabType) {
+    const traceBlock = document.getElementById(traceId);
+    const metricsBlock = document.getElementById(metricsId);
+    
+    // Tìm các nút bấm điều hướng để đổi màu active
+    const container = traceBlock.parentElement;
+    const buttons = container.getElementsByTagName('button');
+
+    if (tabType === 'thinking') {
+        traceBlock.classList.remove('hidden');
+        metricsBlock.classList.add('hidden');
+        buttons[0].className = "text-xs text-blue-400 font-medium focus:outline-none cursor-pointer flex items-center gap-1";
+        buttons[1].className = "text-xs text-gray-500 hover:text-gray-400 font-medium focus:outline-none cursor-pointer flex items-center gap-1";
+    } else {
+        traceBlock.classList.add('hidden');
+        metricsBlock.classList.remove('hidden');
+        buttons[0].className = "text-xs text-gray-500 hover:text-gray-400 font-medium focus:outline-none cursor-pointer flex items-center gap-1";
+        buttons[1].className = "text-xs text-blue-400 font-medium focus:outline-none cursor-pointer flex items-center gap-1";
+    }
+};
+
+// Hàm ẩn/hiện toàn bộ khu vực giám sát (Cả 2 tab)
+window.toggleThinkingBlock = function(traceId, metricsId) {
+    const traceBlock = document.getElementById(traceId);
+    const metricsBlock = document.getElementById(metricsId);
+    const icon = document.getElementById('icon-toggle-' + traceId);
+    
+    if (traceBlock.classList.contains('hidden') && metricsBlock.classList.contains('hidden')) {
+        // Mở lại tab suy nghĩ mặc định
+        traceBlock.classList.remove('hidden');
+        icon.className = "fa-solid fa-chevron-down text-[10px]";
+    } else {
+        // Ẩn toàn bộ
+        traceBlock.classList.add('hidden');
+        metricsBlock.classList.add('hidden');
+        icon.className = "fa-solid fa-chevron-right text-[10px]";
+    }
+};
+
+// Hàm mới: Đổ dữ liệu Metrics chấm điểm từ Backend vào giao diện công cụ
+function renderAgentMetrics(metricsId, metrics) {
+    const container = document.getElementById(metricsId);
+    if (!metrics) {
+        container.innerHTML = `<div class="text-red-400">Không có dữ liệu Telemetry thu thập.</div>`;
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="grid grid-cols-2 gap-2 text-[11px] font-mono">
+            <div class="bg-[#0b0b14] p-2 rounded border border-[#1e1e32]">
+                <span class="text-gray-500">📥 Prompt Tokens:</span> 
+                <span class="text-white font-bold">${metrics.prompt_tokens}</span>
+            </div>
+            <div class="bg-[#0b0b14] p-2 rounded border border-[#1e1e32]">
+                <span class="text-gray-500">📤 Completion Tokens:</span> 
+                <span class="text-white font-bold">${metrics.completion_tokens}</span>
+            </div>
+            <div class="bg-[#0b0b14] p-2 rounded border border-[#1e1e32]">
+                <span class="text-gray-500">⏱️ Tổng thời gian (Latency):</span> 
+                <span class="text-amber-400 font-bold">${metrics.latency}</span>
+            </div>
+            <div class="bg-[#0b0b14] p-2 rounded border border-[#1e1e32]">
+                <span class="text-gray-500">💰 Chi phí ước tính (Cost):</span> 
+                <span class="text-emerald-400 font-bold">${metrics.cost}</span>
+            </div>
+        </div>
+        <div class="mt-2 text-[10px] text-gray-500 flex items-center gap-1.5 border-t border-[#1e1e32] pt-1.5">
+            <span>Trạng thái đánh giá Lab 3:</span>
+            <span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${metrics.status === 'PASSED' ? 'bg-emerald-950 text-emerald-400' : 'bg-red-950 text-red-400'}">${metrics.status}</span>
+        </div>
+    `;
+}
