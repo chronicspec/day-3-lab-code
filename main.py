@@ -1,108 +1,87 @@
 import os
-import re
 from dotenv import load_dotenv
 
-# Import các module cốt lõi từ project của bạn
+# Import Agent và Provider từ hệ thống lõi của bạn
 from src.agent.agent import ReActAgent
 from src.core.gemini_provider import GeminiProvider
+from src.core.openai_provider import OpenAIProvider
 
-# --- ĐĂNG KÝ HÀM XỬ LÝ THỰC TẾ CHO CÁC TOOLS (MOCK DATA HOẶC LOGIC THỰC TẾ) ---
-def search_spots_impl(args_str: str) -> str:
-    """Công cụ tìm kiếm địa điểm du lịch dựa trên tham số"""
-    if "danang" in args_str.lower():
-        return "Gợi ý Đà Nẵng: Chùa Linh Ứng, Phố cổ Hội An, ngắm cảnh Sơn Trà từ xe. Các điểm này bằng phẳng, không leo trèo, phù hợp người già và trẻ nhỏ."
-    return "Gợi ý chung: Các khu nghỉ dưỡng phức hợp hoặc trung tâm thương mại có máy lạnh."
-
-def get_weather_impl(args_str: str) -> str:
-    """Công cụ kiểm tra thời tiết"""
-    return "Dự báo thời tiết ngày mai: Nắng gắt (36°C) từ 11h - 15h. Đầu sáng và cuối chiều dịu mát (29°C)."
-
-def book_car_impl(args_str: str) -> str:
-    """Công cụ đặt xe tự động"""
-    size_match = re.search(r'size=["\']([^"\']*)["\']', args_str)
-    size = size_match.group(1) if size_match else "7_seater"
-    return f"Xe {size} kèm tài xế riêng đã được giữ chỗ thành công trên hệ thống. Giá trọn gói: 1.200.000 VNĐ."
-
-
-def initialize_agent():
-    """Khởi tạo cấu hình Agent từ file .env"""
-    load_dotenv()
-    
-    # Đọc cấu hình theo đúng file .env của bạn
-    api_key = os.getenv("GEMINI_API_KEY")
-    model_name = os.getenv("DEFAULT_MODEL", "gemini-1.5-flash")
-    
-    if not api_key:
-        raise ValueError("❌ Lỗi: Không tìm thấy GEMINI_API_KEY trong file .env!")
-
-    # 1. Khởi tạo LLM Provider (Gemini)
-    provider = GeminiProvider(model_name=model_name, api_key=api_key)
-    
-    # 2. Định nghĩa danh sách công cụ Agent được phép dùng
-    tools = [
-        {
-            "name": "search_spots",
-            "description": "Tìm kiếm các địa điểm tham quan phù hợp theo tiêu chí (ví dụ: tags=['accessible', 'no_climbing']).",
-            "func": search_spots_impl
-        },
-        {
-            "name": "get_weather",
-            "description": "Lấy thông tin dự báo thời tiết chi tiết của một thành phố theo ngày.",
-            "func": get_weather_impl
-        },
-        {
-            "name": "book_car",
-            "description": "Đặt thuê xe du lịch riêng kèm tài xế. Tham số truyền vào: size (số chỗ), note (ghi chú).",
-            "func": book_car_impl
-        }
-    ]
-    
-    # 3. Tạo instance ReActAgent
-    return ReActAgent(llm=provider, tools=tools, max_steps=5)
-
+# IMPORT CHÍNH XÁC CÁC TOOLS TỪ THƯ MỤC CẤU TRÚC SRC/TOOLS/
+from src.tools.tour_tools import search_attractions, check_weather_forecast, calculate_tour_budget
 
 def main():
-    try:
-        agent = initialize_agent()
-    except Exception as e:
-        print(e)
+    # 1. Tải các biến môi trường từ .env
+    load_dotenv()
+    
+    provider_type = os.getenv("DEFAULT_PROVIDER", "google").lower()
+    model_name = os.getenv("DEFAULT_MODEL", "gemini-1.5-flash")
+    api_key = os.getenv("GEMINI_API_KEY") if provider_type == "google" else os.getenv("OPENAI_API_KEY")
+
+    if not api_key:
+        print("❌ Lỗi: Vui lòng cấu hình GEMINI_API_KEY hoặc OPENAI_API_KEY trong file .env!")
         return
 
-    print("\n" + "="*50)
-    print("🤖 AI TRAVEL AGENT TRỰC TUYẾN ĐÃ SẴN SÀNG CHẠY TỰ ĐỘNG!")
-    print("Hệ thống sử dụng mô hình: " + os.getenv("DEFAULT_MODEL", "gemini-1.5-flash"))
-    print("Gõ 'exit' hoặc 'quit' để dừng chương trình.")
-    print("="*50 + "\n")
+    print(f"--- Khởi chạy AI Travel Agent ({provider_type.upper()} - {model_name}) ---")
 
-    # Vòng lặp CLI vô hạn giúp Agent chạy tự động liên tục
+    # 2. Lựa chọn LLM Provider tương ứng
+    if provider_type == "google":
+        llm = GeminiProvider(model_name=model_name, api_key=api_key)
+    elif provider_type == "openai":
+        llm = OpenAIProvider(model_name=model_name, api_key=api_key)
+    else:
+        print("❌ Hệ thống chưa thiết lập provider này ở chế độ tự động.")
+        return
+
+    # 3. Liên kết các hàm python đã import ở trên vào danh sách cấu cụ cung cấp cho LLM
+    tour_tools_config = [
+        {
+            "name": "search_attractions",
+            "description": "Tìm kiếm địa điểm tham quan du lịch phù hợp dựa trên điểm đến và nhãn yêu cầu đặc biệt. Đầu vào truyền chuỗi văn bản (Ví dụ: 'danang, nguoi_gia, tre_em').",
+            "func": search_attractions
+        },
+        {
+            "name": "check_weather_forecast",
+            "description": "Lấy thông tin dự báo thời tiết chi tiết của một thành phố cụ thể theo ngày để tránh nắng mưa. Đầu vào truyền tên thành phố (Ví dụ: 'danang, tomorrow').",
+            "func": check_weather_forecast
+        },
+        {
+            "name": "calculate_tour_budget",
+            "description": "Tính toán tổng chi phí dự kiến gồm tiền thuê xe ô tô đưa đón riêng và vé vào cửa. Đầu vào truyền số lượng khách (Ví dụ: 'pax=6, destination=danang').",
+            "func": calculate_tour_budget
+        }
+    ]
+
+    # 4. Khởi tạo ReAct Agent (Giới hạn tối đa 5 vòng lặp suy nghĩ để tránh infinite loop)
+    agent = ReActAgent(llm=llm, tools=tour_tools_config, max_steps=5)
+
+    print("\n" + "="*60)
+    print("🤖 AI TRAVEL AGENT ĐÃ SẴN SÀNG CHẠY TỰ ĐỘNG CHUẨN MODULES!")
+    print("Mẫu thử nghiệm: 'Thiết kế tour du lịch Đà Nẵng 1 ngày vào ngày mai cho đoàn 6 người có người già cao tuổi, yêu cầu đi nhẹ nhàng tránh nắng và tính toán tổng chi phí tiền xe + vé.'")
+    print("Nhập 'exit' hoặc 'quit' để tắt chương trình.")
+    print("="*60 + "\n")
+
+    # Vòng lặp nhận câu hỏi tự động liên tục từ khách hàng
     while True:
         try:
-            # Nhận request bất kỳ từ người dùng
-            user_input = input("👤 Bạn: ").strip()
-            
-            # Điều kiện thoát
-            if not user_input:
+            user_query = input("👤 Khách hàng: ").strip()
+            if not user_query:
                 continue
-            if user_input.lower() in ["exit", "quit"]:
-                print("🤖 Tạm biệt bạn! Hy vọng gặp lại bạn trong chuyến đi tới.")
+            if user_query.lower() in ["exit", "quit"]:
+                print("🤖 Đang đóng Agent du lịch...")
                 break
+                
+            print("\n⚙️ [Agent bắt đầu phân tích chu trình ReAct Loop...]")
+            response = agent.run(user_query)
             
-            print("\n⚙️ [Agent đang suy nghĩ và điều phối công cụ...] Please wait...")
-            
-            # Kích hoạt Agent xử lý vòng lặp ReAct tự động
-            final_response = agent.run(user_input)
-            
-            # Trả kết quả cuối cùng ra màn hình
-            print("\n🤖 Assistant:")
-            print(f"{final_response}")
-            print("\n" + "-"*50 + "\n")
+            print(f"\n🤖 Kết quả thiết kế từ AI Travel Agent:\n")
+            print("-" * 60)
+            print(response)
+            print("-" * 60 + "\n")
             
         except KeyboardInterrupt:
-            print("\n🤖 Chương trình bị ngắt bởi người dùng. Tạm biệt!")
             break
         except Exception as e:
-            print(f"\n❌ Đã xảy ra lỗi hệ thống: {e}\n")
-
+            print(f"❌ Phát sinh lỗi trong quá trình vận hành: {e}\n")
 
 if __name__ == "__main__":
     main()

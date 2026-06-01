@@ -3,16 +3,10 @@ from typing import Dict, Any, List
 from src.telemetry.logger import logger
 
 class PerformanceTracker:
-    """
-    Theo dõi và đo lường hiệu năng của LLM (Tokens, Latency, Cost).
-    """
     def __init__(self):
         self.session_metrics = []
 
     def track_request(self, provider: str, model: str, usage: Dict[str, int], latency_ms: int):
-        """
-        Ghi nhận metric của request vào hệ thống log telemetry.
-        """
         metric = {
             "provider": provider,
             "model": model,
@@ -27,18 +21,17 @@ class PerformanceTracker:
 
     def _calculate_cost(self, model: str, usage: Dict[str, int]) -> float:
         """
-        Tính toán chi phí dựa theo biểu giá thực tế của Gemini API.
+        Tính toán chi phí USD thực tế của token dựa trên bảng giá của nhà cung cấp.
         """
         prompt_tokens = usage.get("prompt_tokens", 0)
         completion_tokens = usage.get("completion_tokens", 0)
+        m = model.lower()
 
-        # Biểu giá Gemini 1.5 Flash: $0.075 / 1M input tokens và $0.30 / 1M output tokens
-        if "gemini" in model.lower():
-            input_cost = (prompt_tokens / 1_000_000) * 0.075
-            output_cost = (completion_tokens / 1_000_000) * 0.30
-            return input_cost + output_cost
+        # Biểu giá chuẩn cho Gemini 1.5 Flash ($0.075/1M input, $0.30/1M output)
+        if "gemini-1.5-flash" in m:
+            return ((prompt_tokens / 1_000_000) * 0.075) + ((completion_tokens / 1_000_000) * 0.30)
+        # Biểu giá cho GPT-4o nếu đổi provider sang OpenAI
+        elif "gpt-4o" in m:
+            return ((prompt_tokens / 1_000_000) * 5.00) + ((completion_tokens / 1_000_000) * 15.00)
         
-        return (usage.get("total_tokens", 0) / 1000) * 0.01
-
-# Global tracker instance
-tracker = PerformanceTracker()
+        return 0.0  # Mặc định cho Local model offline

@@ -1,53 +1,46 @@
 import os
 import re
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from src.core.llm_provider import LLMProvider
 from src.telemetry.logger import logger
-from src.telemetry.metrics import tracker  # Import tracker chuẩn cấu trúc của bạn
+from src.telemetry.metrics import tracker
 
 class ReActAgent:
     """
-    Một Agent theo kiến trúc ReAct hoàn chỉnh, xử lý vòng lặp suy nghĩ và gọi công cụ.
+    Hệ thống ReAct Agent du lịch điều phối vòng lặp Thought-Action-Observation.
+    Đã được tinh chỉnh (Phiên bản v2) chống kẹt vòng lặp và xử lý markdown backticks.
     """
-    
     def __init__(self, llm: LLMProvider, tools: List[Dict[str, Any]], max_steps: int = 5):
         self.llm = llm
         self.tools = tools
         self.max_steps = max_steps
-        self.history = []
 
     def get_system_prompt(self) -> str:
-        """
-        Tạo system prompt định nghĩa các công cụ hiện có và bắt buộc mô hình tuân thủ ReAct.
-        """
         tool_descriptions = "\n".join([f"- {t['name']}: {t['description']}" for t in self.tools])
-        return f"""
-        You are an intelligent travel assistant. You must solve the user's request step-by-step using the ReAct framework.
-        
-        You have access to the following tools:
-        {tool_descriptions}
+        return f"""You are an expert AI Travel Agent. Your job is to design a perfect, customized itinerary based on the user's request.
+You must solve this request step-by-step using the ReAct framework: Thought -> Action -> Observation.
 
-        CRITICAL FORMAT INSTRUCTIONS:
-        At each step, you must output exactly ONE of the following formats. Do not include any extra text.
+Available tools you can use:
+{tool_descriptions}
 
-        If you want to use a tool:
-        Thought: [Your reasoning about what to do next]
-        Action: tool_name(arguments_string)
+CRITICAL FORMAT INSTRUCTIONS:
+At each step, you must output exactly ONE of the following formats. Do not output anything else.
 
-        If you are ready to give the final response to the user:
-        Thought: [Your final reasoning concluding the task]
-        Final Answer: [Your complete, detailed final response to the user in Vietnamese]
+If you decide you need to call a tool:
+Thought: [Your reasoning about what to do next]
+Action: tool_name(arguments_string)
 
-        Important: Once you output 'Action:', STOP generating and wait for the 'Observation:' from the system.
-        """
+If you have collected all observations and are ready to give the final itinerary to the user:
+Thought: [Your final reasoning concluding the tour planning]
+Final Answer: [Your complete, beautifully formatted tour itinerary in Vietnamese, including a breakdown of the schedule, weather considerations, and estimated budget]
+
+Important: When you output 'Action:', you MUST stop generating text immediately and wait for the system's 'Observation:'.
+"""
 
     def run(self, user_input: str) -> str:
-        """
-        Thực thi vòng lặp ReAct phối hợp với Gemini Provider.
-        """
         logger.log_event("AGENT_START", {"input": user_input, "model": self.llm.model_name})
         
-        # Lưu trữ toàn bộ mạch hội thoại (Thought/Action/Observation) để LLM đọc liên tục
+        # Lưu ngữ cảnh chuỗi suy nghĩ luỹ kế của Agent
         current_context = f"User Request: {user_input}\n"
         steps = 0
 
@@ -55,11 +48,11 @@ class ReActAgent:
             steps += 1
             logger.log_event("AGENT_STEP_START", {"step": steps})
             
-            # Gọi API sinh chuỗi tiếp theo
-            result = self.llm.generate(prompt=current_context, system_prompt=self.get_system_prompt())
+            # 1. Gọi Gemini/OpenAI API sinh bước suy nghĩ tiếp theo
+            result = self.llm.generate(current_prompt=current_context, system_prompt=self.get_system_prompt())
             llm_output = result.get("content", "").strip()
             
-            # Ghi nhận Telemetry Metrics (Tokens, Latency)
+            # Ghi nhận dữ liệu giám sát hệ thống (Tokens, Latency) phục vụ chấm điểm Lab
             tracker.track_request(
                 provider=result.get("provider", "google"),
                 model=self.llm.model_name,
@@ -67,17 +60,20 @@ class ReActAgent:
                 latency_ms=result.get("latency_ms", 0)
             )
 
-            # Nối phản hồi của LLM vào ngữ cảnh lịch sử
+            # Nối kết quả đầu ra của mô hình vào lịch sử xử lý
             current_context += f"\n{llm_output}"
             
-            # Kiểm tra xem có Final Answer chưa
-            final_match = re.search(r"Final Answer:\s*(.*)", llm_output, re.DOTALL | re.IGNORECASE)
+            # Cải tiến Agent v2: Làm sạch Markdown nhiễu nhiễu (ví dụ: ```json ... ```) khiến Parser bị lỗi
+            llm_output_cleaned = re.sub(r"```[a-zA-Z]*\n?", "", llm_output).replace("```", "").strip()
+            
+            # Kịch bản 1: Tìm thấy Câu trả lời cuối cùng (Final Answer)
+            final_match = re.search(r"Final Answer:\s*(.*)", llm_output_cleaned, re.DOTALL | re.IGNORECASE)
             if final_match:
                 logger.log_event("AGENT_END_SUCCESS", {"steps": steps})
                 return final_match.group(1).strip()
             
-            # Kiểm tra xem có Action gọi Tool không
-            action_match = re.search(r"Action:\s*(\w+)\((.*)\)", llm_output, re.IGNORECASE)
+            # Kịch bản 2: Tìm thấy hành động gọi Tool dạng `tool_name(args)`
+            action_match = re.search(r"Action:\s*(\w+)\((.*)\)", llm_output_cleaned, re.IGNORECASE)
             if action_match:
                 tool_name = action_match.group(1).strip()
                 tool_args = action_match.group(2).strip()
@@ -85,29 +81,25 @@ class ReActAgent:
                 # Thực thi tool
                 observation = self._execute_tool(tool_name, tool_args)
                 
-                # Nối kết quả Observation vào ngữ cảnh để LLM đọc ở vòng lặp kế tiếp
+                # Nối Observation ngược lại ngữ cảnh cho bước lặp sau của LLM
                 current_context += f"\nObservation: {observation}"
                 logger.log_event("AGENT_TOOL_CALL", {"tool": tool_name, "args": tool_args, "observation": observation})
             else:
-                # Ép buộc kết thúc nếu mô hình sinh lệch format
-                error_msg = "Error: Invalid format. Please provide 'Action: tool_name(args)' or 'Final Answer: ...'"
+                # Agent v2 - Tự động nhắc nhở sửa định dạng nếu LLM sinh lỗi cấu trúc (Parser Error)
+                error_msg = "Error: Invalid response format. You must strictly use 'Action: tool_name(args)' or 'Final Answer: [response]'."
                 current_context += f"\nObservation: {error_msg}"
                 logger.log_event("AGENT_FORMAT_ERROR", {"output": llm_output})
 
         logger.log_event("AGENT_END_MAX_STEPS", {"steps": steps})
-        return "Hệ thống vượt quá số bước giới hạn cho phép để giải quyết bài toán."
+        return "Xin lỗi, hệ thống Agent không thể hoàn thành thiết kế lịch trình trong số bước quy định (Timeout)."
 
     def _execute_tool(self, tool_name: str, args: str) -> str:
-        """
-        Tìm và thực thi hàm python tương ứng được đăng ký trong cấu hình tools.
-        """
         for tool in self.tools:
             if tool['name'] == tool_name:
                 if "func" in tool and callable(tool["func"]):
                     try:
-                        return tool["func"](args)
+                        return str(tool["func"](args))
                     except Exception as e:
-                        return f"Lỗi khi thực thi công cụ {tool_name}: {str(e)}"
-                return f"Kết quả xử lý mặc định của {tool_name} với tham số ({args})"
-                
-        return f"Tool {tool_name} không tồn tại."
+                        return f"Lỗi phát sinh từ công cụ {tool_name}: {str(e)}"
+                return f"Đã gọi công cụ {tool_name} thành công."
+        return f"Lỗi: Không tìm thấy công cụ tên '{tool_name}' trong hệ thống (Hallucination Error)."
