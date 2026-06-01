@@ -187,7 +187,15 @@ def chat(payload: Dict[str, Any]):
     agent = get_agent()
     logger.log_event("UI_CHAT_START", {"input": user_input})
 
-    out = _run_agent_with_trace(agent, user_input)
-    logger.log_event("UI_CHAT_END", {"id": out.get("id")})
-    return out
+    try:
+        out = _run_agent_with_trace(agent, user_input)
+        logger.log_event("UI_CHAT_END", {"id": out.get("id")})
+        return out
+    except Exception as e:
+        # Tránh để UI bị 500 khi LLM hết quota / rate limit
+        logger.log_event("UI_CHAT_ERROR", {"error": str(e)})
+        msg = str(e)
+        if "429" in msg or "RESOURCE_EXHAUSTED" in msg or "quota" in msg:
+            msg = "Hệ thống đang hết quota/rate limit của Gemini. Vui lòng chờ vài chục giây rồi thử lại."
+        return {"error": msg}
 
