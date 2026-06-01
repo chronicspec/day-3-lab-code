@@ -1,0 +1,23 @@
+::-webkit-scrollbar {
+    width: 5px;
+}
+
+::-webkit-scrollbar-track {
+    background: #11111e;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #2d2d3f;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #3e3e59;
+}
+
+/* Đảm bảo bố cục hiển thị mượt mà khi suy nghĩ co giãn */
+.transition-all {
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 200s;
+}
