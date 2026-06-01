@@ -1,112 +1,117 @@
-<!-- <!DOCTYPE html>
-<html>
-<head><title>Chatbot Baseline</title></head>
-<body>
-    <h2>Travel Chatbot Baseline</h2>
-    <input type="text" id="userInput" placeholder="Nhập yêu cầu...">
-    <button onclick="send()">Gửi</button>
-    <div id="result" style="margin-top:20px; white-space: pre-wrap; border:1px solid #ccc; padding:10px;"></div>
-
-    <script>
-        async function send() {
-            const input = document.getElementById('userInput').value;
-            const res = await fetch('/ask-baseline', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({input: input})
-            });
-            const data = await res.json();
-            document.getElementById('result').innerText = data.response;
-        }
-    </script>
-</body>
-</html> -->
-
-
-<!-- 
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <title>So sánh AI: Baseline vs Agent</title>
-    <style>
-        .container { display: flex; gap: 20px; padding: 20px; }
-        .box { flex: 1; border: 2px solid #333; padding: 15px; min-height: 300px; border-radius: 8px; }
-        .box h3 { text-align: center; color: #007bff; }
-    </style>
-</head>
-<body>
-    <h1 style="text-align: center;">So sánh mô hình AI</h1>
-    <div style="text-align: center;">
-        <input type="text" id="userInput" style="width: 50%; padding: 10px;" placeholder="Nhập yêu cầu tour...">
-        <button onclick="compareAI()" style="padding: 10px;">So sánh kết quả</button>
-    </div>
-
-    <div class="container">
-        <div class="box" id="baselineBox"><h3>Chatbot Baseline</h3><div class="content"></div></div>
-        <div class="box" id="agentBox"><h3>ReAct Agent</h3><div class="content"></div></div>
-    </div>
-
-    <script>
-        async function compareAI() {
-            const input = document.getElementById('userInput').value;
-            const res = await fetch('/compare', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({input: input})
-            });
-            const data = await res.json();
-            document.querySelector('#baselineBox .content').innerText = data.baseline;
-            document.querySelector('#agentBox .content').innerText = data.agent;
-        }
-    </script>
-</body>
-</html> -->
-
-
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>So sánh AI: Baseline vs Agent</title>
+    <title>Travel Agent AI</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* CSS nội bộ bổ sung cho giao diện chatbot */
+        .chat-container { max-width: 800px; margin: auto; padding: 20px; }
+        .trace-container { margin-top: 20px; }
+        
+        .trace-step { 
+            background: #f8f9fa; 
+            border: 1px solid #dee2e6; 
+            border-radius: 8px; 
+            margin-bottom: 10px; 
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        .trace-step summary { 
+            padding: 15px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            background: #e9ecef; 
+            list-style: none;
+            display: flex;
+            justify-content: space-between;
+        }
+        .trace-step summary::after { content: '▼'; color: #666; }
+        .trace-step[open] summary::after { content: '▲'; }
+        
+        .step-content { padding: 15px; border-top: 1px solid #dee2e6; background: #fff; }
+        .metrics-box { 
+            background: #d1ecf1; color: #0c5460; 
+            padding: 10px; margin: 10px 0; border-radius: 5px; 
+            font-size: 0.9em; text-align: center;
+        }
+    </style>
 </head>
 <body>
-    <h1 style="text-align: center;">AI Model Comparison</h1>
-    <div style="text-align: center; margin-bottom: 20px;">
-        <input type="text" id="userInput" placeholder="Nhập yêu cầu tour của bạn...">
-        <button id="btn" onclick="compareAI()">So sánh kết quả</button>
-    </div>
-    <div id="loading" style="display:none;">Đang suy nghĩ... Hệ thống đang chạy vòng lặp ReAct Agent...</div>
+    <h1 style="text-align: center;">AI Travel Agent Control</h1>
+    
+    <div class="chat-container">
+        <div class="control-panel">
+            <input type="text" id="userInput" placeholder="Hôm nay bạn muốn đi đâu?">
+            <button id="btn" onclick="askAgent()">Gửi yêu cầu</button>
+        </div>
+        
+        <div id="loading" style="display:none; text-align:center; margin: 10px;">Đang suy nghĩ... Hệ thống đang chạy ReAct Loop...</div>
+        
+        <div class="box" id="resultBox">
+            <h3>Kết quả thiết kế lịch trình</h3>
+            <div class="content" id="finalAnswer"></div>
+        </div>
 
-    <div class="container">
-        <div class="box" id="baselineBox"><h3>Chatbot Baseline</h3><div class="content"></div></div>
-        <div class="box" id="agentBox"><h3>ReAct Agent</h3><div class="content"></div></div>
+        <div id="metrics" class="metrics-box" style="display:none;"></div>
+        <div id="traceContainer" class="trace-container"></div>
     </div>
 
     <script>
-        async function compareAI() {
+        async function askAgent() {
             const btn = document.getElementById('btn');
             const loading = document.getElementById('loading');
-            const baselineContent = document.querySelector('#baselineBox .content');
-            const agentContent = document.querySelector('#agentBox .content');
+            const finalAnswer = document.getElementById('finalAnswer');
+            const traceContainer = document.getElementById('traceContainer');
+            const metricsDiv = document.getElementById('metrics');
 
+            // Reset trạng thái
             btn.disabled = true;
             loading.style.display = 'block';
-            baselineContent.innerText = "Đang xử lý...";
-            agentContent.innerText = "Đang xử lý...";
+            finalAnswer.innerText = "Đang kết nối với AI...";
+            traceContainer.innerHTML = "";
+            metricsDiv.style.display = 'none';
 
-            const res = await fetch('/compare', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({input: document.getElementById('userInput').value})
-            });
-            const data = await res.json();
-            
-            baselineContent.innerText = data.baseline;
-            agentContent.innerText = data.agent;
-            
-            btn.disabled = false;
-            loading.style.display = 'none';
+            try {
+                const res = await fetch('/ask-agent', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({input: document.getElementById('userInput').value})
+                });
+                
+                const data = await res.json();
+                
+                // 1. Hiển thị kết quả
+                finalAnswer.innerText = data.final_answer || "Không có phản hồi từ Agent.";
+
+                // 2. Hiển thị Metrics
+                if (data.metrics) {
+                    metricsDiv.style.display = 'block';
+                    metricsDiv.innerText = `Số bước thực hiện: ${data.metrics.steps} | Độ trễ: ${data.metrics.latency_ms}ms`;
+                }
+                
+                // 3. Render Trace dạng Accordion
+                if (data.trace && Array.isArray(data.trace)) {
+                    traceContainer.innerHTML = "<h3>Chi tiết tiến trình (Click để xem):</h3>" + data.trace.map((step, index) => `
+                        <details class="trace-step">
+                            <summary>
+                                <span>Bước ${index + 1}: ${step.action !== 'None' ? 'Đã gọi ' + step.action : 'Suy nghĩ'}</span>
+                            </summary>
+                            <div class="step-content">
+                                <p>💡 <b>Thought:</b> ${step.thought || 'Không có'}</p>
+                                <p>⚙️ <b>Action:</b> ${step.action || 'None'}</p>
+                                <p>👁️ <b>Observation:</b> ${step.observation || 'None'}</p>
+                            </div>
+                        </details>
+                    `).join('');
+                }
+            } catch (error) {
+                finalAnswer.innerText = "Lỗi kết nối tới Server. Vui lòng kiểm tra lại.";
+                console.error(error);
+            } finally {
+                btn.disabled = false;
+                loading.style.display = 'none';
+            }
         }
     </script>
 </body>

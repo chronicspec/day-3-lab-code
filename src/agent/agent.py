@@ -14,6 +14,7 @@ class ReActAgent:
         self.llm = llm
         self.tools = tools
         self.max_steps = max_steps
+        self.tools_description = "\n".join([f"- {t['name']}: {t['description']}" for t in self.tools])
 
     def get_system_prompt(self) -> str:
         tool_descriptions = "\n".join([f"- {t['name']}: {t['description']}" for t in self.tools])
@@ -37,9 +38,9 @@ Final Answer: [Your complete, beautifully formatted tour itinerary in Vietnamese
 Important: When you output 'Action:', you MUST stop generating text immediately and wait for the system's 'Observation:'.
 """
 
-    def run(self, user_input: str) -> str:
-        logger.log_event("AGENT_START", {"input": user_input, "model": self.llm.model_name})
-        
+    def run(self, user_input: str) -> Dict[str, Any]:
+        start_time = time.time()
+        trace_history = []
         current_context = f"User Request: {user_input}\n"
         steps = 0
 
@@ -83,8 +84,10 @@ Important: When you output 'Action:', you MUST stop generating text immediately 
                 tool_args = action_match.group(2).strip()
                 
                 observation = self._execute_tool(tool_name, tool_args)
-                current_context += f"\nObservation: {observation}"
-                logger.log_event("AGENT_TOOL_CALL", {"tool": tool_name, "args": tool_args, "observation": observation})
+                step_data["observation"] = observation
+                
+                # Cập nhật ngữ cảnh cho bước tiếp theo
+                current_context += f"\n{llm_output}\nObservation: {observation}"
             else:
                 # Cơ chế tự sửa lỗi định dạng của Agent v2 khi LLM sinh sai cấu trúc ReAct
                 error_msg = "Error: Invalid format. You must use 'Action: tool_name(args)' or 'Final Answer: [response]'."

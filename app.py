@@ -1,30 +1,5 @@
-# # app.py
-# from flask import Flask, request, jsonify, render_template
-# from chatbot_baseline import run_chatbot_baseline
-
-# app = Flask(__name__)
-
-# @app.route('/')
-# def index():
-#     return render_template('index.html')
-
-# @app.route('/ask-baseline', methods=['POST'])
-# def ask_baseline():
-#     data = request.json
-#     user_input = data.get('input')
-    
-#     # Gọi hàm chatbot
-#     response = run_chatbot_baseline(user_input)
-    
-#     return jsonify({"response": response})
-
-# if __name__ == '__main__':
-#     app.run(debug=True, port=5000)
-
-
 from flask import Flask, request, jsonify, render_template
-from chatbot_baseline import run_chatbot_baseline
-from tests.test_local import run_agent  # Import hàm run_agent đã sửa ở bước trước
+from tests.test_local import run_agent # Hàm đã có Timeout 40s
 
 app = Flask(__name__)
 
@@ -32,18 +7,14 @@ app = Flask(__name__)
 def index():
     return render_template('index.html')
 
-@app.route('/compare', methods=['POST'])
-def compare():
-    user_input = request.json.get('input')
-    
-    # Chạy đồng thời 2 logic
-    baseline_res = run_chatbot_baseline(user_input)
-    agent_res = run_agent(user_input)
-    
-    return jsonify({
-        "baseline": baseline_res,
-        "agent": agent_res
-    })
+@app.route('/ask-agent', methods=['POST'])
+def ask_agent():
+    try:
+        user_input = request.json.get('input', '')
+        result_dict = run_agent(user_input) 
+        return jsonify(result_dict)
+    except Exception as e:
+        return jsonify({"final_answer": "Lỗi hệ thống: " + str(e), "trace": [], "metrics": {"steps": 0, "latency_ms": 0}})
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

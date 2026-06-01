@@ -22,10 +22,22 @@ def main():
 
     # Cấu hình danh sách Công cụ Travel Agent
     tour_tools_config = [
-        {"name": "search_attractions", "description": "Tra cứu điểm tham quan theo tiêu chí sức khỏe (Ví dụ: 'danang, nguoi_gia').", "func": search_attractions},
-        {"name": "check_weather_forecast", "description": "Lấy thông tin thời tiết thành phố để sắp xếp giờ đi (Ví dụ: 'danang, tomorrow').", "func": check_weather_forecast},
-        {"name": "calculate_tour_budget", "description": "Tính toán tiền thuê xe và tiền vé trọn gói dựa trên số người (Ví dụ: 'pax=6').", "func": calculate_tour_budget}
-    ]
+    {
+        "name": "search_attractions",
+        "description": "Tìm địa điểm. Tham số: city='TênThànhPhố', tags='tag1,tag2'. Ví dụ: search_attractions(city='HaNoi', tags='cultural,accessible')",
+        "func": search_attractions
+    },
+    {
+        "name": "check_weather_forecast",
+        "description": "Xem thời tiết. Tham số: city='TênThànhPhố'. Ví dụ: check_weather_forecast(city='DaNang')",
+        "func": check_weather_forecast
+    },
+    {
+        "name": "calculate_tour_budget",
+        "description": "Tính ngân sách. Tham số: city='TênThànhPhố', pax=SốNgười, car='LoạiXe'. Ví dụ: calculate_tour_budget(city='DaNang', pax=6, car='7_seater')",
+        "func": calculate_tour_budget
+    }
+]
 
     agent = ReActAgent(llm=llm, tools=tour_tools_config, max_steps=5)
     evaluator = AgentEvaluator()
