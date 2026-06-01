@@ -1,17 +1,34 @@
-[
-    {
-        "size": "4_seater",
-        "price": 800000,
-        "note": "Tiết kiệm"
-    },
-    {
-        "size": "7_seater",
-        "price": 1200000,
-        "note": "Phù hợp gia đình, có ghế em bé"
-    },
-    {
-        "size": "16_seater",
-        "price": 1800000,
-        "note": "Cho đoàn đông người"
-    }
-]
+{
+    "DaNang": [
+        {
+            "size": "7_seater",
+            "price": 1200000
+        },
+        {
+            "size": "16_seater",
+            "price": 1800000
+        }
+    ],
+    "HaNoi": [
+        {
+            "size": "4_seater",
+            "price": 1000000
+        },
+        {
+            "size": "7_seater",
+            "price": 1500000
+        }
+    ],
+    "Hue": [
+        {
+            "size": "7_seater",
+            "price": 1000000
+        }
+    ],
+    "PhuQuoc": [
+        {
+            "size": "7_seater",
+            "price": 1500000
+        }
+    ]
+}

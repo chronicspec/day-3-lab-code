@@ -1,42 +1,55 @@
-[
-    {
-        "name": "Chùa Linh Ứng",
-        "tags": [
-            "accessible",
-            "no_climbing"
-        ],
-        "desc": "Địa điểm tâm linh, đường đi bằng phẳng."
-    },
-    {
-        "name": "Phố cổ Hội An",
-        "tags": [
-            "accessible",
-            "cultural"
-        ],
-        "desc": "Khu phố đi bộ, thuận tiện cho người già."
-    },
-    {
-        "name": "Bán đảo Sơn Trà",
-        "tags": [
-            "scenic",
-            "driving"
-        ],
-        "desc": "Ngắm cảnh từ trên xe, phù hợp gia đình."
-    },
-    {
-        "name": "Bà Nà Hills",
-        "tags": [
-            "scenic",
-            "climbing"
-        ],
-        "desc": "Cần đi cáp treo, phù hợp nếu không ngại độ cao."
-    },
-    {
-        "name": "Cầu Rồng",
-        "tags": [
-            "accessible",
-            "nightlife"
-        ],
-        "desc": "Ngắm cảnh đêm, đường rộng rãi."
-    }
-]
+{
+    "DaNang": [
+        {
+            "name": "Chùa Linh Ứng",
+            "tags": [
+                "accessible",
+                "no_climbing"
+            ],
+            "desc": "Tượng Phật lớn, cảnh biển đẹp."
+        },
+        {
+            "name": "Bà Nà Hills",
+            "tags": [
+                "scenic",
+                "climbing"
+            ],
+            "desc": "Cáp treo dài, kiến trúc Pháp."
+        }
+    ],
+    "HaNoi": [
+        {
+            "name": "Hồ Hoàn Kiếm",
+            "tags": [
+                "accessible",
+                "cultural"
+            ],
+            "desc": "Trái tim thủ đô, đi bộ thư giãn."
+        },
+        {
+            "name": "Lăng Bác",
+            "tags": [
+                "cultural"
+            ],
+            "desc": "Di tích lịch sử quan trọng."
+        }
+    ],
+    "Hue": [
+        {
+            "name": "Đại Nội",
+            "tags": [
+                "cultural",
+                "walking"
+            ],
+            "desc": "Cung điện cổ kính, di sản thế giới."
+        },
+        {
+            "name": "Chùa Thiên Mụ",
+            "tags": [
+                "accessible",
+                "cultural"
+            ],
+            "desc": "Biểu tượng tâm linh ven sông Hương."
+        }
+    ]
+}
