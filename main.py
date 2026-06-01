@@ -34,22 +34,22 @@ def main():
 
     # 3. Liên kết các hàm python đã import ở trên vào danh sách cấu cụ cung cấp cho LLM
     tour_tools_config = [
-        {
-            "name": "search_attractions",
-            "description": "Tìm kiếm địa điểm tham quan du lịch phù hợp dựa trên điểm đến và nhãn yêu cầu đặc biệt. Đầu vào truyền chuỗi văn bản (Ví dụ: 'danang, nguoi_gia, tre_em').",
-            "func": search_attractions
-        },
-        {
-            "name": "check_weather_forecast",
-            "description": "Lấy thông tin dự báo thời tiết chi tiết của một thành phố cụ thể theo ngày để tránh nắng mưa. Đầu vào truyền tên thành phố (Ví dụ: 'danang, tomorrow').",
-            "func": check_weather_forecast
-        },
-        {
-            "name": "calculate_tour_budget",
-            "description": "Tính toán tổng chi phí dự kiến gồm tiền thuê xe ô tô đưa đón riêng và vé vào cửa. Đầu vào truyền số lượng khách (Ví dụ: 'pax=6, destination=danang').",
-            "func": calculate_tour_budget
-        }
-    ]
+    {
+        "name": "search_attractions",
+        "description": "Tìm địa điểm. Tham số: city='TênThànhPhố', tags='tag1,tag2'. Ví dụ: search_attractions(city='HaNoi', tags='cultural,accessible')",
+        "func": search_attractions
+    },
+    {
+        "name": "check_weather_forecast",
+        "description": "Xem thời tiết. Tham số: city='TênThànhPhố'. Ví dụ: check_weather_forecast(city='DaNang')",
+        "func": check_weather_forecast
+    },
+    {
+        "name": "calculate_tour_budget",
+        "description": "Tính ngân sách. Tham số: city='TênThànhPhố', pax=SốNgười, car='LoạiXe'. Ví dụ: calculate_tour_budget(city='DaNang', pax=6, car='7_seater')",
+        "func": calculate_tour_budget
+    }
+]
 
     # 4. Khởi tạo ReAct Agent (Giới hạn tối đa 5 vòng lặp suy nghĩ để tránh infinite loop)
     agent = ReActAgent(llm=llm, tools=tour_tools_config, max_steps=5)
