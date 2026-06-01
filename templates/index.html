@@ -1,96 +1,113 @@
-<!doctype html>
+<!-- <!DOCTYPE html>
+<html>
+<head><title>Chatbot Baseline</title></head>
+<body>
+    <h2>Travel Chatbot Baseline</h2>
+    <input type="text" id="userInput" placeholder="Nhập yêu cầu...">
+    <button onclick="send()">Gửi</button>
+    <div id="result" style="margin-top:20px; white-space: pre-wrap; border:1px solid #ccc; padding:10px;"></div>
+
+    <script>
+        async function send() {
+            const input = document.getElementById('userInput').value;
+            const res = await fetch('/ask-baseline', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({input: input})
+            });
+            const data = await res.json();
+            document.getElementById('result').innerText = data.response;
+        }
+    </script>
+</body>
+</html> -->
+
+
+<!-- 
+<!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{{ title }}</title>
-  <link rel="stylesheet" href="/static/styles.css" />
+    <title>So sánh AI: Baseline vs Agent</title>
+    <style>
+        .container { display: flex; gap: 20px; padding: 20px; }
+        .box { flex: 1; border: 2px solid #333; padding: 15px; min-height: 300px; border-radius: 8px; }
+        .box h3 { text-align: center; color: #007bff; }
+    </style>
 </head>
 <body>
-  <div class="app">
-    <header class="topbar">
-      <div class="brand">
-        <div class="logo">🧭</div>
-        <div>
-          <div class="brand-title">AI Travel Agent</div>
-          <div class="brand-sub">Local UI • ReAct Thought → Action → Observation</div>
-        </div>
-      </div>
-      <div class="topbar-actions">
-        <button class="btn ghost" id="btn-clear">Clear chat</button>
-        <button class="btn ghost" id="btn-export">Export trace</button>
-      </div>
-    </header>
+    <h1 style="text-align: center;">So sánh mô hình AI</h1>
+    <div style="text-align: center;">
+        <input type="text" id="userInput" style="width: 50%; padding: 10px;" placeholder="Nhập yêu cầu tour...">
+        <button onclick="compareAI()" style="padding: 10px;">So sánh kết quả</button>
+    </div>
 
-    <main class="layout">
-      <section class="panel chat-panel">
-        <div class="panel-header">
-          <div class="panel-title">Cuộc trò chuyện</div>
-          <div class="pill" id="status-pill">Sẵn sàng</div>
-        </div>
+    <div class="container">
+        <div class="box" id="baselineBox"><h3>Chatbot Baseline</h3><div class="content"></div></div>
+        <div class="box" id="agentBox"><h3>ReAct Agent</h3><div class="content"></div></div>
+    </div>
 
-        <div class="messages" id="messages" aria-live="polite"></div>
+    <script>
+        async function compareAI() {
+            const input = document.getElementById('userInput').value;
+            const res = await fetch('/compare', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({input: input})
+            });
+            const data = await res.json();
+            document.querySelector('#baselineBox .content').innerText = data.baseline;
+            document.querySelector('#agentBox .content').innerText = data.agent;
+        }
+    </script>
+</body>
+</html> -->
 
-        <div class="composer">
-          <textarea id="input" rows="2" placeholder="Ví dụ: Thiết kế tour Đà Nẵng 1 ngày cho 6 người (người già + bé 4 tuổi), đi nhẹ nhàng tránh nắng..."></textarea>
-          <div class="composer-row">
-            <div class="hint">Tip: Nhấn Shift+Enter để xuống dòng • Enter để gửi</div>
-            <div class="composer-actions">
-              <button class="btn primary" id="btn-send">Gửi</button>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      <aside class="panel right-panel">
-        <div class="panel-header">
-          <div class="panel-title">Trace & Telemetry</div>
-        </div>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>So sánh AI: Baseline vs Agent</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1 style="text-align: center;">AI Model Comparison</h1>
+    <div style="text-align: center; margin-bottom: 20px;">
+        <input type="text" id="userInput" placeholder="Nhập yêu cầu tour của bạn...">
+        <button id="btn" onclick="compareAI()">So sánh kết quả</button>
+    </div>
+    <div id="loading" style="display:none;">Đang suy nghĩ... Hệ thống đang chạy vòng lặp ReAct Agent...</div>
 
-        <div class="subpanel">
-          <div class="subpanel-title">Trace (chi tiết)</div>
-          <div class="trace" id="trace"></div>
-          <div class="empty" id="trace-empty">Chưa có trace.</div>
-        </div>
+    <div class="container">
+        <div class="box" id="baselineBox"><h3>Chatbot Baseline</h3><div class="content"></div></div>
+        <div class="box" id="agentBox"><h3>ReAct Agent</h3><div class="content"></div></div>
+    </div>
 
-        <div class="subpanel">
-          <div class="subpanel-title">Telemetry</div>
-          <div class="telemetry-grid" id="telemetry">
-            <div class="metric">
-              <div class="metric-label">Latency</div>
-              <div class="metric-value">—</div>
-            </div>
-            <div class="metric">
-              <div class="metric-label">Cost</div>
-              <div class="metric-value">—</div>
-            </div>
-            <div class="metric">
-              <div class="metric-label">Tokens</div>
-              <div class="metric-value">—</div>
-            </div>
-            <div class="metric">
-              <div class="metric-label">Provider</div>
-              <div class="metric-value">—</div>
-            </div>
-          </div>
-        </div>
+    <script>
+        async function compareAI() {
+            const btn = document.getElementById('btn');
+            const loading = document.getElementById('loading');
+            const baselineContent = document.querySelector('#baselineBox .content');
+            const agentContent = document.querySelector('#agentBox .content');
 
-        <div class="subpanel">
-          <div class="subpanel-title">Gợi ý bố cục itinerary</div>
-          <div class="trace-tips">
-            <ul>
-              <li>Timeline theo khung giờ</li>
-              <li>Ghi chú “tránh nắng” & nghỉ trưa</li>
-              <li>Chọn điểm đi bộ nhẹ / di chuyển bằng xe</li>
-              <li>Tách ước tính chi phí: xe + vé</li>
-            </ul>
-          </div>
-        </div>
-      </aside>
-    </main>
-  </div>
+            btn.disabled = true;
+            loading.style.display = 'block';
+            baselineContent.innerText = "Đang xử lý...";
+            agentContent.innerText = "Đang xử lý...";
 
-  <script src="/static/app.js"></script>
+            const res = await fetch('/compare', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({input: document.getElementById('userInput').value})
+            });
+            const data = await res.json();
+            
+            baselineContent.innerText = data.baseline;
+            agentContent.innerText = data.agent;
+            
+            btn.disabled = false;
+            loading.style.display = 'none';
+        }
+    </script>
 </body>
 </html>
-
