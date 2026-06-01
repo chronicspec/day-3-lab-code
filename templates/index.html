@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ title }}</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">🧭</div>
+        <div>
+          <div class="brand-title">AI Travel Agent</div>
+          <div class="brand-sub">Local UI • ReAct Thought → Action → Observation</div>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn ghost" id="btn-clear">Clear chat</button>
+        <button class="btn ghost" id="btn-export">Export trace</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel chat-panel">
+        <div class="panel-header">
+          <div class="panel-title">Cuộc trò chuyện</div>
+          <div class="pill" id="status-pill">Sẵn sàng</div>
+        </div>
+
+        <div class="messages" id="messages" aria-live="polite"></div>
+
+        <div class="composer">
+          <textarea id="input" rows="2" placeholder="Ví dụ: Thiết kế tour Đà Nẵng 1 ngày cho 6 người (người già + bé 4 tuổi), đi nhẹ nhàng tránh nắng..."></textarea>
+          <div class="composer-row">
+            <div class="hint">Tip: Nhấn Shift+Enter để xuống dòng • Enter để gửi</div>
+            <div class="composer-actions">
+              <button class="btn primary" id="btn-send">Gửi</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="panel right-panel">
+        <div class="panel-header">
+          <div class="panel-title">Trace & Telemetry</div>
+        </div>
+
+        <div class="subpanel">
+          <div class="subpanel-title">Trace (chi tiết)</div>
+          <div class="trace" id="trace"></div>
+          <div class="empty" id="trace-empty">Chưa có trace.</div>
+        </div>
+
+        <div class="subpanel">
+          <div class="subpanel-title">Telemetry</div>
+          <div class="telemetry-grid" id="telemetry">
+            <div class="metric">
+              <div class="metric-label">Latency</div>
+              <div class="metric-value">—</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Cost</div>
+              <div class="metric-value">—</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Tokens</div>
+              <div class="metric-value">—</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Provider</div>
+              <div class="metric-value">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="subpanel">
+          <div class="subpanel-title">Gợi ý bố cục itinerary</div>
+          <div class="trace-tips">
+            <ul>
+              <li>Timeline theo khung giờ</li>
+              <li>Ghi chú “tránh nắng” & nghỉ trưa</li>
+              <li>Chọn điểm đi bộ nhẹ / di chuyển bằng xe</li>
+              <li>Tách ước tính chi phí: xe + vé</li>
+            </ul>
+          </div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
+
