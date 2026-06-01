@@ -1,4 +1,3 @@
-import os
 import re
 from typing import List, Dict, Any
 from src.core.llm_provider import LLMProvider
@@ -57,7 +56,7 @@ Important: When you output 'Action:', you MUST stop generating text immediately 
                 provider=result.get("provider", "google"),
                 model=self.llm.model_name,
                 usage=result.get("usage", {}),
-                latency_ms=result.get("latency_ms", 0)
+                latency_ms=result.get("latency_ms", 0),
             )
 
             # Nối kết quả đầu ra của mô hình vào lịch sử xử lý
@@ -77,8 +76,7 @@ Important: When you output 'Action:', you MUST stop generating text immediately 
             if action_match:
                 tool_name = action_match.group(1).strip()
                 tool_args = action_match.group(2).strip()
-                
-                # Thực thi tool
+
                 observation = self._execute_tool(tool_name, tool_args)
                 
                 # Nối Observation ngược lại ngữ cảnh cho bước lặp sau của LLM
@@ -95,8 +93,9 @@ Important: When you output 'Action:', you MUST stop generating text immediately 
 
     def _execute_tool(self, tool_name: str, args: str) -> str:
         for tool in self.tools:
-            if tool['name'] == tool_name:
-                if "func" in tool and callable(tool["func"]):
+            if tool.get("name") == tool_name:
+                func = tool.get("func")
+                if callable(func):
                     try:
                         return str(tool["func"](args))
                     except Exception as e:
